@@ -1,0 +1,51 @@
+libopenwch-template — provenance and licensing
+=============================================
+
+What this repository is
+-----------------------
+
+The application skeleton for libopenwch: the two files a project needs before
+it has any code of its own -- a `Makefile` and a `main.c` -- plus the editor
+configuration for them.
+
+It is deliberately not a collection of examples.  Worked programs for each
+peripheral live in libopenwch-examples; a starting point that is also a demo is
+a starting point you have to delete things from.
+
+The library is present as a git submodule, untouched and unmodified, so
+updating it is `git submodule update --remote` rather than a merge.
+
+Licence
+-------
+
+  Everything in this repository       LGPL-3.0-or-later     LICENSE
+
+`LICENSE` carries the GNU LGPL version 3 text, matching libopenwch.
+
+**Your project is yours.**  The LGPL here covers the skeleton: the Makefile and
+the placeholder `main.c`.  The code you write in them is your own work under
+whatever terms you choose, and the licence of this repository puts no condition
+on the firmware you build.  This is the same intent as libopencm3's usual
+clarification about applications that link the library.
+
+Derived from libopencm3 and libopenwch
+--------------------------------------
+
+`Makefile` is derived from libopencm3's application makefiles
+(LGPL-3.0-or-later), via libopencm3-template's `rules.mk`, and follows
+libopenwch's adaptations of them for RISC-V, generic `riscv64-unknown-elf`
+toolchains and genlink-based linker script generation.
+
+  libopencm3        https://github.com/libopencm3/libopencm3     LGPL-3.0+
+  libopenwch        https://github.com/LrkSeraph/libopenwch      LGPL-3.0+
+  libopencm3-template
+                    https://github.com/bonedaddy/libopencm3-template
+                    the model for the PROJECT/DEVICE/OPENWCH_DIR layout
+
+libopenwch itself contains no code from WCH's SDK; its Bluetooth LE layer links
+a closed-source stack that is Apache-2.0.  That boundary is described in
+libopenwch's own NOTICE, and only matters to a project that sets
+`LIBOPENWCH_BLE=1`.
+
+Nothing in this repository is affiliated with or endorsed by Nanjing Qinheng
+Microelectronics.

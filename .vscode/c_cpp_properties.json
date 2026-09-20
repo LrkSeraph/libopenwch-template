@@ -1,0 +1,27 @@
+{
+    "version": 4,
+    "configurations": [
+        {
+            "name": "libopenwch",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/libopenwch/include"
+            ],
+            // Change this to the DEVICE family's macro from libopenwch's
+            // ld/devices.data: CH32V0 for ch32v003f4p6, CH5XX58X for ch582m.
+            "defines": [
+                "CH32V0"
+            ],
+            "cStandard": "c99",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-riscv32",
+            "compilerPath": "/usr/bin/riscv64-unknown-elf-gcc",
+            // These must match what mk/genlink-config.mk derives from DEVICE,
+            // or the editor will disagree with the compiler about the ISA.
+            "compilerArgs": [
+                "-march=rv32ec_zmmul_zicsr_zifencei",
+                "-mabi=ilp32e"
+            ]
+        }
+    ]
+}

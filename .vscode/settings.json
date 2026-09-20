@@ -1,0 +1,22 @@
+{
+    "files.associations": {
+        "*.h": "c",
+        "*.ld": "ld",
+        "*.S": "riscv"
+    },
+    "C_Cpp.default.cStandard": "c99",
+    "C_Cpp.default.intelliSenseMode": "linux-gcc-riscv32",
+    "editor.tabSize": 8,
+    "editor.insertSpaces": false,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "search.exclude": {
+        "**/*.elf": true,
+        "**/*.bin": true,
+        "**/*.hex": true,
+        "**/*.map": true,
+        "**/*.list": true,
+        "generated.*.ld": true,
+        "libopenwch": true
+    }
+}

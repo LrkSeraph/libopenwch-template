@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // Needs a GDB server on port 3333: `minichlink -G` in another
+            // terminal, with the WCH-Link attached.
+            "name": "Debug (minichlink gdbserver)",
+            "type": "cppdbg",
+            "request": "launch",
+            // Change my_app to your PROJECT if you renamed it.
+            "program": "${workspaceFolder}/my_app.elf",
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb-multiarch",
+            "miDebuggerServerAddress": "localhost:3333",
+            "preLaunchTask": "build",
+            "setupCommands": [
+                { "text": "set architecture riscv:rv32" },
+                { "text": "target remote localhost:3333" },
+                { "text": "monitor reset halt" },
+                { "text": "load" }
+            ]
+        }
+    ]
+}
