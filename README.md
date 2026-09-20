@@ -108,50 +108,30 @@ sudo apt-get install -y gcc-riscv64-unknown-elf
 
 `libopenwch/mk/gcc-config.mk` probes `riscv64-unknown-elf`, `riscv64-none-elf`,
 `riscv32-unknown-elf`, `riscv-none-elf`, `riscv64-elf` and `riscv32-elf`, in
-that order, and stops with an explanation if none is found.  Override it with:
+that order, and stops with an explanation if none is found; override with
+`make PREFIX=/opt/xpack/bin/riscv-none-elf`.  `riscv64-linux-gnu-` is not
+probed: its crt and libc conventions break bare-metal builds.
 
-```sh
-make PREFIX=/opt/xpack-riscv-none-elf-gcc/bin/riscv-none-elf
-```
-
-`riscv64-linux-gnu-` is not probed: its crt and libc conventions break
-bare-metal builds.
-
-Some distributions build this toolchain without newlib for the smaller
-multilibs.  If the link fails on `-lc`, build with the library's freestanding
-mini-libc instead:
-
-```sh
-make LIBOPENWCH_NOSTDLIB=1
-```
+Some distributions build the toolchain without newlib for the smaller
+multilibs.  If the link fails on `-lc`, use the library's freestanding
+mini-libc: `make LIBOPENWCH_NOSTDLIB=1`.
 
 ## Flashing
 
-[minichlink](https://github.com/cnlohr/ch32fun) drives the WCH-Link and the
-built-in USB ISP bootloader.  It needs no vendor driver and works on Linux,
-Windows and macOS.
+[minichlink](https://github.com/cnlohr/ch32fun) is the default: it drives the
+WCH-Link and the built-in USB ISP bootloader, needs no vendor driver, and works
+on Linux, Windows and macOS.
 
 ```sh
 make flash                      # write the internal flash
 make monitor                    # printf over the single-wire debug channel
 make unbrick                    # recover a part that stopped answering
 make size                       # section sizes of the ELF
-```
-
-Point it at the binary if it is not on `PATH`:
-
-```sh
 make flash MINICHLINK=~/src/ch32fun/minichlink/minichlink
 ```
 
-### Choosing the programmer
-
-`PROGRAMMER` picks which tool drives the WCH-LinkE:
-
-| Value | Tool |
-|---|---|
-| `minichlink` | **(default)** minichlink, found on `PATH` or named by `MINICHLINK` |
-| `wchlink` | [libopenwch-tools](https://github.com/LrkSeraph/libopenwch-tools), from the `tools/wchlink/` submodule or on `PATH` |
+`PROGRAMMER=wchlink` uses
+[libopenwch-tools](https://github.com/LrkSeraph/libopenwch-tools) instead:
 
 ```sh
 git submodule update --init tools/wchlink    # fetch the companion tool
@@ -160,29 +140,27 @@ make flash PROGRAMMER=wchlink
 ```
 
 `make wchlink` builds the submodule in place, and `make flash
-PROGRAMMER=wchlink` then uses `tools/wchlink/build/wchlink`; if neither that
-nor one on `PATH` exists, the build stops with an explanation rather than a
+PROGRAMMER=wchlink` then uses `tools/wchlink/build/wchlink`, or one on `PATH`;
+if there is neither, the build stops with an explanation rather than a
 confusing "command not found".
 
-The default stays `minichlink` for now because `wchlink` is still at milestone
-1 and cannot flash yet — its `flash` subcommand reports "not implemented".  It
-becomes the default once it can.
+The default is still `minichlink`: `wchlink` implements flashing for the
+CH32V00x family but has not been run against a part yet, and the default flips
+once it has.
 
 ## Where to go next
 
 * **Worked examples of every implemented peripheral** —
   [libopenwch-examples](https://github.com/LrkSeraph/libopenwch-examples) has
-  five complete programs (GPIO, UART, Bluetooth LE advertising) with the same
-  build rules this skeleton uses.  Reading one is faster than deriving a clock
-  tree from the reference manual.
-* **The library API** — `libopenwch/include/libopenwch/`, and the per-family
-  READMEs under `libopenwch/lib/`.
-* **How the library itself is organised** — `libopenwch/project.md`.
+  five complete programs (GPIO, UART, Bluetooth LE advertising) using the same
+  build rules this skeleton uses.  Reading one beats deriving a clock tree from
+  the reference manual.
+* **The library API** — `libopenwch/include/libopenwch/` and the per-family
+  notes under `libopenwch/lib/`.
 
-`main()` is the only symbol you have to provide.  The reset vector, the vector
+`main()` is the only symbol you have to provide: the reset vector, the vector
 table, `.data`/`.bss` initialisation and the entry point all come from
-libopenwch's QingKe core layer, which is why there is no startup assembly in
-this repository.
+libopenwch's QingKe core layer, which is why there is no startup assembly here.
 
 ## Licence
 
