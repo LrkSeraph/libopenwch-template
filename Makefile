@@ -23,12 +23,12 @@
 ###############################################################################
 # A libopenwch application.
 #
-#	git submodule update --init	# fetch libopenwch
+#	git submodule update --init	# fetch libopenwch and libopenwch-tools
 #	make				# build my_app.elf/.bin/.hex
 #	make flash			# write it with minichlink
 #
-# Edit PROJECT and DEVICE below, add your sources to CFILES, and put the rest
-# of your code next to main.c.
+# Edit PROJECT and DEVICE below, add your sources to CFILES, and put your code
+# in src/.
 #
 # There are deliberately no build rules in this file.  The compiler, the
 # -march/-mabi pair, the linker script and the library archive are all derived
@@ -49,8 +49,10 @@ DEVICE		?= ch32v003f4p6
 ## value given on the command line or in the environment always wins.
 OPENWCH_DIR	?= $(abspath libopenwch)
 
-## Sources, basenames only.  Objects are built next to their sources.
-CFILES		?= main.c
+## Sources, as paths relative to this Makefile.  Your headers live next to them
+## and are found automatically by the compiler; `-Isrc` below is there for code
+## in a subdirectory that includes them by name.
+CFILES		?= src/main.c
 AFILES		?=
 CXXFILES	?=
 
@@ -85,7 +87,7 @@ CFLAGS		+= $(OPT) $(CSTD) -g3
 CFLAGS		+= -Wall -Wextra -Wshadow -Wundef
 CFLAGS		+= -fno-common -mno-relax
 CFLAGS		+= -ffunction-sections -fdata-sections
-CPPFLAGS	+= -MD
+CPPFLAGS	+= -MD -Isrc
 
 ##
 ## -nostartfiles is essential: libopenwch supplies its own reset entry and
@@ -113,26 +115,72 @@ endif
 ##
 ## Flashing.
 ##
-## minichlink drives the WCH-Link and the built-in USB ISP bootloader, needs no
-## vendor driver, and is the one programmer libopenwch recommends today.  A
-## companion flasher, libopenwch-tools' wchlink, is on the way; it is not wired
-## in here yet because it cannot flash at this milestone.
+## Two programmer tools can drive a WCH-LinkE:
 ##
+##   minichlink   https://github.com/cnlohr/ch32fun -- external, found on PATH,
+##                needs no vendor driver, and the default.
+##   wchlink      the companion tool in tools/wchlink/, built from the
+##                libopenwch-tools submodule.  Building it needs libusb, so a
+##                plain clone leaves it unbuilt.
+##
+## The default is minichlink *on purpose*: wchlink is at milestone 1 and cannot
+## flash yet -- its flash subcommand reports "not implemented".  Making it the
+## default now would turn a working `make flash` into a failing one, so the
+## default flips when its milestone 3 lands.
+##
+PROGRAMMER	?= minichlink
+
 MINICHLINK	?= minichlink
+MINICHLINK_FLAGS ?= -b
+WRITE_SECTION	?= flash
+WCHLINK		?= $(abspath tools/wchlink/build/wchlink)
+
+ifeq ($(PROGRAMMER),wchlink)
+
+## Prefer the submodule's own build; fall back to one on PATH.
+WCHLINK_TOOL	?= $(if $(wildcard $(WCHLINK)),$(WCHLINK),wchlink)
+
+ifeq ($(wildcard $(WCHLINK)),)
+ifeq ($(shell command -v wchlink >/dev/null 2>&1 && echo found),)
+$(error PROGRAMMER=wchlink, but no wchlink found. Fetch and build the \
+    submodule (`git submodule update --init tools/wchlink && make wchlink`), \
+    or leave PROGRAMMER at its default and use minichlink.)
+endif
+endif
+
+## These are recursive (=) on purpose: WRITE_SECTION is defined above.
+FLASH_PREFIX	= $(WCHLINK_TOOL) flash
+FLASH_SUFFIX	= $(WCHLINK_FLAGS)
+MONITOR_CMD	= $(WCHLINK_TOOL) terminal
+UNBRICK_CMD	= $(WCHLINK_TOOL) unbrick
+
+else
+
+FLASH_PREFIX	= $(MINICHLINK) -w
+FLASH_SUFFIX	= $(WRITE_SECTION) $(MINICHLINK_FLAGS)
+MONITOR_CMD	= $(MINICHLINK) -T
+UNBRICK_CMD	= $(MINICHLINK) -u
+
+endif
 
 all: $(PROJECT).elf $(PROJECT).bin $(PROJECT).hex
 
 flash: $(PROJECT).bin
-	@printf "  FLASH   $<\n"
-	$(Q)$(MINICHLINK) -w $< flash -b
+	@printf "  FLASH   $< ($(PROGRAMMER))\n"
+	$(Q)$(FLASH_PREFIX) $< $(FLASH_SUFFIX)
 
 ## printf over the single-wire debug channel.
 monitor:
-	$(Q)$(MINICHLINK) -T
+	$(Q)$(MONITOR_CMD)
 
 ## Recover a part that stopped answering.
 unbrick:
-	$(Q)$(MINICHLINK) -u
+	$(Q)$(UNBRICK_CMD)
+
+## Build the companion flasher from its submodule.  It needs libusb-1.0 and its
+## headers; see tools/wchlink/README.
+wchlink:
+	$(Q)$(MAKE) -C tools/wchlink
 
 size: $(PROJECT).elf
 	@$(SIZE) $(PROJECT).elf
@@ -144,7 +192,7 @@ clean:
 	## DEVICE does not leave a stale linker script behind.
 	$(Q)rm -f generated.*.ld
 
-.PHONY: all clean flash monitor unbrick size
+.PHONY: all clean flash monitor unbrick size wchlink
 
 -include $(OBJS:.o=.d)
 

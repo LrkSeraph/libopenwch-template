@@ -5,15 +5,19 @@ What this repository is
 -----------------------
 
 The application skeleton for libopenwch: the two files a project needs before
-it has any code of its own -- a `Makefile` and a `main.c` -- plus the editor
+it has any code of its own -- a `Makefile` and a `src/main.c` -- plus the editor
 configuration for them.
 
 It is deliberately not a collection of examples.  Worked programs for each
 peripheral live in libopenwch-examples; a starting point that is also a demo is
 a starting point you have to delete things from.
 
-The library is present as a git submodule, untouched and unmodified, so
-updating it is `git submodule update --remote` rather than a merge.
+Two things are present as git submodules, untouched and unmodified, so updating
+either is `git submodule update --remote` rather than a merge:
+
+  libopenwch/           the library, and the only one the default build needs
+  tools/wchlink/        libopenwch-tools' WCH-LinkE flasher, used only by
+                        `make flash PROGRAMMER=wchlink`
 
 Licence
 -------
@@ -23,7 +27,7 @@ Licence
 `LICENSE` carries the GNU LGPL version 3 text, matching libopenwch.
 
 **Your project is yours.**  The LGPL here covers the skeleton: the Makefile and
-the placeholder `main.c`.  The code you write in them is your own work under
+the placeholder `src/main.c`.  The code you write in them is your own work under
 whatever terms you choose, and the licence of this repository puts no condition
 on the firmware you build.  This is the same intent as libopencm3's usual
 clarification about applications that link the library.
@@ -38,6 +42,8 @@ toolchains and genlink-based linker script generation.
 
   libopencm3        https://github.com/libopencm3/libopencm3     LGPL-3.0+
   libopenwch        https://github.com/LrkSeraph/libopenwch      LGPL-3.0+
+  libopenwch-tools  https://github.com/LrkSeraph/libopenwch-tools
+                    the flasher submodule, LGPL-3.0-or-later, licenses itself
   libopencm3-template
                     https://github.com/bonedaddy/libopencm3-template
                     the model for the PROJECT/DEVICE/OPENWCH_DIR layout

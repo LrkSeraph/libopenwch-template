@@ -15,7 +15,8 @@ library.  Everything else is yours to write.
 ## Quick start
 
 ```sh
-# 1. Copy the skeleton.  The submodule brings libopenwch with it.
+# 1. Copy the skeleton.  The submodules bring libopenwch and the
+#    companion flasher with it.
 git clone --recurse-submodules \
     https://github.com/LrkSeraph/libopenwch-template.git ~/src/my-firmware
 cd ~/src/my-firmware
@@ -25,7 +26,7 @@ rm -rf .git && git init
 
 # 3. Say what it is and which part it runs on.
 $EDITOR Makefile        # PROJECT and DEVICE
-$EDITOR main.c
+$EDITOR src/main.c
 
 # 4. Build and flash.
 make                    # -> my_app.elf, my_app.bin, my_app.hex
@@ -35,10 +36,12 @@ make flash              # needs a WCH-Link, see Flashing below
 The first `make` also builds libopenwch, because the family archive it needs is
 not in the submodule yet.  Later builds link against it and do nothing extra.
 
-If you cloned without `--recurse-submodules`, the submodule directory is empty
-and `make` stops with a message saying so; `git submodule update --init` fixes
-it, and `make OPENWCH_DIR=/path/to/libopenwch` builds against a checkout
-somewhere else instead.
+If you cloned without `--recurse-submodules`, the `libopenwch/` directory is
+empty and `make` stops with a message saying so.  `git submodule update --init
+libopenwch` fetches just the library, which is all the default `minichlink`
+flow needs; `git submodule update --init` fetches the companion flasher as
+well.  `make OPENWCH_DIR=/path/to/libopenwch` builds against a checkout
+somewhere else entirely.
 
 ## What to change
 
@@ -46,8 +49,8 @@ somewhere else instead.
 |---|---|
 | `PROJECT` in the Makefile | basename of every output file (`my_app` → `my_app.elf`, `my_app.bin`, `my_app.hex`) |
 | `DEVICE` in the Makefile | the exact part number — `ch32v003f4p6`, not `ch32v003`.  The names are the part patterns in `libopenwch/ld/devices.data` |
-| `CFILES` in the Makefile | your C sources, basenames only; objects are built next to them |
-| `main.c` | your code |
+| `CFILES` in the Makefile | your C sources, as paths relative to the Makefile; objects are built next to them.  Add a header directory to `CPPFLAGS` if you make one |
+| `src/main.c` | your code |
 
 `DEVICE` is the only thing that decides the ISA, the linker script and which
 library archive is linked, so do not add `-march`/`-mabi` by hand: an
@@ -61,12 +64,14 @@ for `ch582m`, `ch583m`, `ch584m` or `ch585m` needs nothing but a different
 ```
 my-firmware/
 ├── Makefile              your project: name, part, sources
-├── main.c                your code starts here
+├── src/
+│   └── main.c            your code starts here
 ├── libopenwch/           git submodule — the library, untouched
 │   ├── mk/               the build rules this Makefile includes
 │   ├── ld/devices.data   the device database
 │   ├── include/          the headers
 │   └── lib/              the archives, built on first `make`
+├── tools/wchlink/        git submodule — the companion flasher (optional)
 ├── .clang-format         the house style
 ├── .vscode/              optional editor configuration
 ├── .github/workflows/    a CI job that builds this skeleton
@@ -89,7 +94,11 @@ documents the whole contract; the variables worth knowing straight away:
 | `CSTD` | `-std=c99` | C standard |
 | `PREFIX` | auto-detected | toolchain prefix without the trailing `-` |
 | `LIBOPENWCH_NOSTDLIB` | — | set to `1` to link the bundled mini-libc instead of newlib |
-| `MINICHLINK` | `minichlink` | the flasher binary |
+| `PROGRAMMER` | `minichlink` | which flasher to drive: `minichlink` or `wchlink` |
+| `MINICHLINK` | `minichlink` | the minichlink binary |
+| `MINICHLINK_FLAGS` | `-b` | extra minichlink arguments |
+| `WRITE_SECTION` | `flash` | minichlink's write region |
+| `WCHLINK` | `tools/wchlink/build/wchlink` | the `wchlink` binary, used with `PROGRAMMER=wchlink` |
 
 ## Toolchain
 
@@ -135,10 +144,29 @@ Point it at the binary if it is not on `PATH`:
 make flash MINICHLINK=~/src/ch32fun/minichlink/minichlink
 ```
 
-A companion flasher written for this project, `wchlink` from
-[libopenwch-tools](https://github.com/LrkSeraph/libopenwch-tools), is on the
-way; it is not wired into this Makefile yet because it cannot flash at its
-current milestone.
+### Choosing the programmer
+
+`PROGRAMMER` picks which tool drives the WCH-LinkE:
+
+| Value | Tool |
+|---|---|
+| `minichlink` | **(default)** minichlink, found on `PATH` or named by `MINICHLINK` |
+| `wchlink` | [libopenwch-tools](https://github.com/LrkSeraph/libopenwch-tools), from the `tools/wchlink/` submodule or on `PATH` |
+
+```sh
+git submodule update --init tools/wchlink    # fetch the companion tool
+make wchlink                                 # build it (needs libusb-1.0)
+make flash PROGRAMMER=wchlink
+```
+
+`make wchlink` builds the submodule in place, and `make flash
+PROGRAMMER=wchlink` then uses `tools/wchlink/build/wchlink`; if neither that
+nor one on `PATH` exists, the build stops with an explanation rather than a
+confusing "command not found".
+
+The default stays `minichlink` for now because `wchlink` is still at milestone
+1 and cannot flash yet — its `flash` subcommand reports "not implemented".  It
+becomes the default once it can.
 
 ## Where to go next
 
