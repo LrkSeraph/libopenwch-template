@@ -98,19 +98,12 @@ LDFLAGS		+= -Wl,--gc-sections
 LDFLAGS		+= -Wl,-Map=$(PROJECT).map
 
 ##
-## libc.  By default the toolchain's own newlib is used.  A toolchain built
-## without one -- Debian's gcc-riscv64-unknown-elf has none for every
-## multilib -- works by setting LIBOPENWCH_NOSTDLIB=1, which links the
-## freestanding mini-libc that libopenwch builds alongside the drivers.
+## libc: newlib when the toolchain has it, the bundled mini-libc when it does
+## not.  Whether a toolchain was built with newlib for this multilib is a
+## property of the toolchain, not of a project, so it is probed rather than
+## asked about; `make LIBOPENWCH_NOSTDLIB=1` (or `=0`) overrides.
 ##
-ifeq ($(LIBOPENWCH_NOSTDLIB),1)
-LDFLAGS		+= -nostdlib
-LDLIBS		+= $(OPENWCH_DIR)/lib/libopenwch_mini_libc_$(genlink_family).a -lgcc
-else
-LDFLAGS		+= -Wl,--start-group
-LDLIBS		+= -lc -lgcc -lnosys
-LDFLAGS		+= -Wl,--end-group
-endif
+include $(OPENWCH_DIR)/mk/libc-config.mk
 
 ##
 ## Flashing.
